@@ -35,20 +35,23 @@ extern "C" {
 #include "min_heap.h"
 #include "evsignal.h"
 
+/*
+ 每种IO复用机制都必须实现这5个函数接口 比如对于epoll 初始化时 会指向5个函数
+*/
 struct eventop {
 	const char *name;
-	void *(*init)(struct event_base *);
-	int (*add)(void *, struct event *);
-	int (*del)(void *, struct event *);
-	int (*dispatch)(struct event_base *, void *, struct timeval *);
-	void (*dealloc)(struct event_base *, void *);
+	void *(*init)(struct event_base *);  // 初始化
+	int (*add)(void *, struct event *);  // 注册事件
+	int (*del)(void *, struct event *);	 // 删除事件
+	int (*dispatch)(struct event_base *, void *, struct timeval *); // 分发事件
+	void (*dealloc)(struct event_base *, void *);  // 销毁
 	/* set if we need to reinitialize the event base */
 	int need_reinit;
 };
 
 struct event_base {
-	const struct eventop *evsel;
-	void *evbase;
+	const struct eventop *evsel;  // eventop  相当于 select poll epoll 中的一个
+	void *evbase;			// evbase 相当于 evsel 的一个实例
 	int event_count;		/* counts number of total events */
 	int event_count_active;	/* counts number of active events */
 
@@ -56,18 +59,18 @@ struct event_base {
 	int event_break;		/* Set to terminate loop immediately */
 
 	/* active event management */
-	struct event_list **activequeues;
-	int nactivequeues;
+	struct event_list **activequeues;   // 二级数组 activequeues[priority] 是一个链表 每个优先级对应一个链表
+	int nactivequeues;					
 
 	/* signal handling info */
-	struct evsignal_info sig;
+	struct evsignal_info sig;  // 信号管理结构体
 
-	struct event_list eventqueue;
-	struct timeval event_tv;
+	struct event_list eventqueue;  // 保存了所有注册事件event
+ 	struct timeval event_tv;  // 事件管理变量
 
-	struct min_heap timeheap;
+	struct min_heap timeheap;   // 事件管理小根堆
 
-	struct timeval tv_cache;
+	struct timeval tv_cache;   // 事件管理变量
 };
 
 /* Internal use only: Functions that might be missing from <sys/queue.h> */

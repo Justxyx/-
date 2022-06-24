@@ -211,26 +211,36 @@ struct {								\
 struct event_base;
 #ifndef EVENT_NO_STRUCT
 struct event {
-	TAILQ_ENTRY (event) ev_next;
-	TAILQ_ENTRY (event) ev_active_next;
-	TAILQ_ENTRY (event) ev_signal_next;
-	unsigned int min_heap_idx;	/* for managing timeouts */
+  // libevent 用两个双向链表来保存所有注册的IO事件 与 Signal 事件
+	TAILQ_ENTRY (event) ev_next;   //  IO事件链表中位置
+	TAILQ_ENTRY (event) ev_active_next;  // libevent 将所有的激活事件放在active_list中，然后遍历该链表执行调度，该字段指明了该event在active_list中的位置。
+	TAILQ_ENTRY (event) ev_signal_next;  // Signal 事件在Signal 表中的位置
+	unsigned int min_heap_idx;	/* for managing timeouts */   // 小根堆的索引 
 
-	struct event_base *ev_base;
+	struct event_base *ev_base;  // 底座 反应堆实例
 
-	int ev_fd;
-	short ev_events;
-	short ev_ncalls;
+	int ev_fd;   // 对IO事件，是绑定的文件描述符。 对signal 事件，是绑定的信号。
+	short ev_events;  // EV_TIMEOUT   EV_READ EV_WRITE  EV_SIGNAL  EV_PERSIST  超时 读 写 信号 事件   信号事件 超时事件 不能同时设置
+	short ev_ncalls;  // 时间就绪执行时， 回调函数调用次数
 	short *ev_pncalls;	/* Allows deletes in callback */
 
-	struct timeval ev_timeout;
+	struct timeval ev_timeout;  // 超时值
 
 	int ev_pri;		/* smaller numbers are higher priority */
 
-	void (*ev_callback)(int, short, void *arg);
-	void *ev_arg;
+	void (*ev_callback)(int, short, void *arg);   // 回调函数
+	void *ev_arg;  
 
-	int ev_res;		/* result passed to event callback */
+	int ev_res;		/* result passed to event callback */  // 当前激活事件类型
+  //  表示多种情况  1. event 在time堆中 2. event 在已经注册的事件链表中  3. event在激活链表中 
+  /*
+  #define EVLIST_TIMEOUT	0x01   event 在time堆中
+  #define EVLIST_INSERTED	0x02    event 在已注册事件链表中
+  #define EVLIST_SIGNAL	0x04      
+  #define EVLIST_ACTIVE	0x08      event 在激活链表中
+  #define EVLIST_INTERNAL	0x10    
+  #define EVLIST_INIT	0x80        event 已被初始化
+  */
 	int ev_flags;
 };
 #else
