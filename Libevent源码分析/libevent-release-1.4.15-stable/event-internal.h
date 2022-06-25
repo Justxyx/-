@@ -37,6 +37,7 @@ extern "C" {
 
 /*
  每种IO复用机制都必须实现这5个函数接口 比如对于epoll 初始化时 会指向5个函数
+ 那么 程序就可以使用epoll 为IO复用机制了
 */
 struct eventop {
 	const char *name;
